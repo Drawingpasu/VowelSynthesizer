@@ -1,4 +1,4 @@
-## generator.py -
+## generator.py -협업테스트
 .generate_sin(sample_rate, duration, freq, bit_depth, dB) - 사인파 생성
 - sample_rate: 샘플레이트... 기본값은 48000
 - duration: 지속시간(실수, 단위는 초)... 기본값은 10.0
