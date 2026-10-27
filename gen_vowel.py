@@ -4,12 +4,12 @@ import numpy as np
 
 #이중모음 변수 설정 (둘 다 단위는 초), 근데 안바꾸는걸 권장함
 SemivowelOverlapSec = 0.19   #얘는 반모음 -> 모음 전환시간
-SemivowelDurationSec = 0.022   #얘는 only 반모음 지속시간(전환시간 제외한)
+SemivowelDurationSec = 0.024   #얘는 only 반모음 지속시간(전환시간 제외한)
 
 
 #이중모음 각 경우별 반모음 모음 매핑 딕셔너리
 
-vowelseps = {
+vowelseps = { #하향 포함, [0]은 반모음이고 [1]은 모음이도록 딕셔너리를 짰음
     'ㅑ' : ['ㅣ', 'ㅏ'],
     '야' : ['ㅣ', 'ㅏ'],
 
@@ -370,7 +370,7 @@ def make_sound(vowel, f0, duration1, sample_rate = 48000): #vowel은 char, f0은
             ValueError(f"반모음 -> 모음 전환 시간(초)이 {SemivowelOverlapSec}이지만 전체 지속시간이 너무 짧습니다!")
 
         #반모음부, 모음부 만들기
-        semi = make_sound(vowelseps[vowel][0], (f0[0], f0[0]), duration1 = SemivowelDurationSec + SemivowelOverlapSec)
+        semi = make_sound(vowelseps[vowel][0], (f0[0]-8, f0[0]), duration1 = SemivowelDurationSec + SemivowelOverlapSec)
         vow = make_sound(vowelseps[vowel][1], (f0[0], f0[1]), duration1 = duration1 - SemivowelDurationSec)
 
         #반모음 사라지는 부분이랑 모음 등장하는 부분 데시벨 그래프 생성
@@ -398,6 +398,53 @@ def make_sound(vowel, f0, duration1, sample_rate = 48000): #vowel은 char, f0은
 
         #모음부 정리
         L = generator.generate_sin(duration = SemivowelDurationSec, freqL=0, freqR=0, dB=-100, sample_rate=sample_rate)
+        output = output + np.append(L, vow)
+
+        return output
+
+    elif vowel == 'ㅢ' or vowel == '의': # 'ㅢ'소리일때
+        loc_SemivowelOverlapSec = duration1 * 0.6
+        loc_SemivowelDurationSec = duration1 * 0.2
+
+        f0 = list(f0)
+        f0[0] = int(f0[0])
+        f0[1] = int(f0[1])
+
+        if (duration1 >= loc_SemivowelOverlapSec):  # 혹시모를 오류처리
+            ValueError(f"반모음 -> 모음 전환 시간(초)이 {loc_SemivowelOverlapSec}이지만 전체 지속시간이 너무 짧습니다!")
+
+        # 반모음부, 모음부 만들기
+        semi = make_sound(vowelseps[vowel][0], (f0[0], f0[0]), duration1=loc_SemivowelDurationSec + loc_SemivowelOverlapSec)
+        vow = make_sound(vowelseps[vowel][1], (f0[0], f0[1]), duration1=duration1 - loc_SemivowelDurationSec)
+
+        # 반모음 사라지는 부분이랑 모음 등장하는 부분 데시벨 그래프 생성
+        fadeout = np.append(np.zeros(int(loc_SemivowelDurationSec * sample_rate)),
+                            np.linspace(0, -18, int(loc_SemivowelOverlapSec * sample_rate))) - 8
+        fadein = np.append(np.linspace(-18, 0, int(loc_SemivowelOverlapSec * sample_rate)),
+                           np.zeros(int((duration1 - loc_SemivowelOverlapSec - loc_SemivowelDurationSec) * sample_rate))) - 24
+
+        # 데시벨 그래프 적용
+        max_val = 2 ** (5 - 1)  # 16-bit 최대치 32767
+        amplitude1 = 2 * 10 ** ((fadeout) / 20)
+        amplitude1 = np.column_stack((amplitude1, amplitude1)).flatten()
+        semi = amplitude1 * semi
+        semi = semi.astype(np.int16)
+
+        amplitude2 = max_val * 10 ** ((fadein) / 20)
+        amplitude2 = np.column_stack((amplitude2, amplitude2)).flatten()
+        vow = amplitude2 * vow
+        vow = vow.astype(np.int16)
+
+        # 출력물 담을 그릇 만들기
+        output = generator.generate_sin(duration=duration1, freqL=0, freqR=0, dB=-100, sample_rate=sample_rate)
+
+        # 반모음부 정리
+        R = generator.generate_sin(duration=duration1 - loc_SemivowelOverlapSec - loc_SemivowelDurationSec, freqL=0, freqR=0,
+                                   dB=-100, sample_rate=sample_rate)
+        output = output + np.append(semi, R)
+
+        # 모음부 정리
+        L = generator.generate_sin(duration=loc_SemivowelDurationSec, freqL=0, freqR=0, dB=-100, sample_rate=sample_rate)
         output = output + np.append(L, vow)
 
         return output
