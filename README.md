@@ -1,4 +1,4 @@
-## generator.py t dfdf
+## generator.py
 
 .generate_sin(sample_rate, duration, freq, bit_depth, dB)
 - sample_rate: 샘플레이트... 기본값은 48000
@@ -46,4 +46,4 @@ dBFilter??() 이런식으로 되어있는데, 저 ??에는 A, E, I, O, U, EU, EO
    6. 1~5의 과정을 필요한 배음 수 만큼 각각에 대해 반복해준다
 4. 만든 최종 소리를 반환한다
 
-10월 20일 기준 아직 '아'만 구현된 상태.
+10월 27일 부로 이중모음 최초 구현 완료, 현재 'ㅑ'만 구현된 상태. 이중모음 로직도 모두 완성되는 대로 여기에 적겠다
