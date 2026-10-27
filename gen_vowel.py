@@ -361,7 +361,7 @@ def make_sound(vowel, f0, duration1, sample_rate = 48000): #vowel은 char, f0은
 
     ##################  이중모음  ###################
 
-    else : ##이거 딕셔너리로 해봐야겠다
+    elif vowel != 'ㅢ' and vowel != '의': #'ㅢ'를 제외한 모든 상향 이중모음 생성에 대하여...
         f0 = list(f0)
         f0[0] = int(f0[0])
         f0[1] = int(f0[1])
