@@ -3,8 +3,49 @@ import numpy as np
 
 
 #이중모음 변수 설정 (둘 다 단위는 초), 근데 안바꾸는걸 권장함
-SemivowelOverlapSec = 0.17   #얘는 반모음 -> 모음 전환시간
-SemivowelDurationSec = 0.02   #얘는 only 반모음 지속시간(전환시간 제외한)
+SemivowelOverlapSec = 0.19   #얘는 반모음 -> 모음 전환시간
+SemivowelDurationSec = 0.022   #얘는 only 반모음 지속시간(전환시간 제외한)
+
+
+#이중모음 각 경우별 반모음 모음 매핑 딕셔너리
+
+vowelseps = {
+    'ㅑ' : ['ㅣ', 'ㅏ'],
+    '야' : ['ㅣ', 'ㅏ'],
+
+    'ㅕ' : ['ㅣ', 'ㅓ'],
+    '여' : ['ㅣ', 'ㅓ'],
+
+    'ㅛ' : ['ㅣ', 'ㅗ'],
+    '요' : ['ㅣ', 'ㅗ'],
+
+    'ㅜ': ['ㅣ', 'ㅜ'],
+    'ㅠ': ['ㅣ', 'ㅜ'],
+
+    'ㅖ': ['ㅣ', 'ㅔ'],
+    '예': ['ㅣ', 'ㅔ'],
+    'ㅒ': ['ㅣ', 'ㅔ'],
+    '얘': ['ㅣ', 'ㅔ'],
+
+    'ㅘ' : ['ㅗ', 'ㅏ'],
+    '와' : ['ㅗ', 'ㅏ'],
+
+    'ㅙ' : ['ㅗ', 'ㅐ'],
+    '왜' : ['ㅗ', 'ㅐ'],
+    'ㅞ' : ['ㅜ', 'ㅔ'],
+    '웨' : ['ㅜ', 'ㅔ'],
+    'ㅚ' : ['ㅗ', 'ㅔ'],
+    '외' : ['ㅗ', 'ㅔ'],
+
+    'ㅝ' : ['ㅜ', 'ㅓ'],
+    '워' : ['ㅜ', 'ㅓ'],
+
+    'ㅟ' : ['ㅜ', 'ㅣ'],
+    '위' : ['ㅜ', 'ㅣ'],
+
+    'ㅢ' : ['ㅡ', 'ㅣ'],
+    '의' : ['ㅡ', 'ㅣ']
+}
 
 def make_sound(vowel, f0, duration1, sample_rate = 48000): #vowel은 char, f0은 튜플, duration은 float
     if vowel == 'ㅏ' or vowel == '아':
@@ -320,7 +361,7 @@ def make_sound(vowel, f0, duration1, sample_rate = 48000): #vowel은 char, f0은
 
     ##################  이중모음  ###################
 
-    elif vowel == 'ㅑ' or vowel == '야':
+    else : ##이거 딕셔너리로 해봐야겠다
         f0 = list(f0)
         f0[0] = int(f0[0])
         f0[1] = int(f0[1])
@@ -329,12 +370,12 @@ def make_sound(vowel, f0, duration1, sample_rate = 48000): #vowel은 char, f0은
             ValueError(f"반모음 -> 모음 전환 시간(초)이 {SemivowelOverlapSec}이지만 전체 지속시간이 너무 짧습니다!")
 
         #반모음부, 모음부 만들기
-        semi = make_sound('ㅣ', (f0[0], f0[0]), duration1 = SemivowelDurationSec + SemivowelOverlapSec)
-        vow = make_sound('ㅏ', (f0[0], f0[1]), duration1 = duration1 - SemivowelDurationSec)
+        semi = make_sound(vowelseps[vowel][0], (f0[0], f0[0]), duration1 = SemivowelDurationSec + SemivowelOverlapSec)
+        vow = make_sound(vowelseps[vowel][1], (f0[0], f0[1]), duration1 = duration1 - SemivowelDurationSec)
 
         #반모음 사라지는 부분이랑 모음 등장하는 부분 데시벨 그래프 생성
         fadeout = np.append(np.zeros(int(SemivowelDurationSec * sample_rate)),  np.linspace(0, -15, int(SemivowelOverlapSec * sample_rate))) - 8
-        fadein = np.append(np.linspace(-15, 0, int(SemivowelOverlapSec * sample_rate)), np.zeros(int((duration1 - SemivowelOverlapSec - SemivowelDurationSec) * sample_rate))) - 24
+        fadein = np.append(np.linspace(-13, 0, int(SemivowelOverlapSec * sample_rate)), np.zeros(int((duration1 - SemivowelOverlapSec - SemivowelDurationSec) * sample_rate))) - 24
 
         #데시벨 그래프 적용
         max_val = 2 ** (5 - 1)  # 16-bit 최대치 32767
