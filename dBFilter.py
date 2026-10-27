@@ -34,10 +34,10 @@ def dBfilterE():
     lin5 = np.linspace(-25, -27, 260)  #3-4
     lin6 = np.linspace(-27, -28, 260) #4-5
     lin7 = np.linspace(-28, -25, 260) #5-   # 이친구 num은, 얘까지 num 다 더했을때 2860 되도록 정함
-    lin8 = np.linspace(-25, -29, 260)
-    lin9 = np.linspace(-29, -26, 260) 
-    lin10 = np.linspace(-26, -18, 260)
-    lin11 = np.linspace(-18, -500, 260)
+    lin8 = np.linspace(-25, -19, 260)
+    lin9 = np.linspace(-19, -30, 260)
+    lin10 = np.linspace(-30, -31, 260)
+    lin11 = np.linspace(-31, -500, 260)
     lin12 = np.linspace(-500, -500, 24000)
     #이렇게 왼끝은 -100에서 끌고오고, 오른끝은 -500으로 보내버리기
 
