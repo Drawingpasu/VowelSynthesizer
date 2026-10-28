@@ -3,7 +3,7 @@ import numpy as np
 
 
 #이중모음 변수 설정 (둘 다 단위는 초), 근데 안바꾸는걸 권장함
-SemivowelOverlapSec = 0.19   #얘는 반모음 -> 모음 전환시간
+SemivowelOverlapSec = 0.1   #얘는 반모음 -> 모음 전환시간
 SemivowelDurationSec = 0.024   #얘는 only 반모음 지속시간(전환시간 제외한)
 
 
@@ -19,8 +19,8 @@ vowelseps = { #하향 포함, [0]은 반모음이고 [1]은 모음이도록 딕�
     'ㅛ' : ['ㅣ', 'ㅗ'],
     '요' : ['ㅣ', 'ㅗ'],
 
-    'ㅜ': ['ㅣ', 'ㅜ'],
     'ㅠ': ['ㅣ', 'ㅜ'],
+    '유': ['ㅣ', 'ㅜ'],
 
     'ㅖ': ['ㅣ', 'ㅔ'],
     '예': ['ㅣ', 'ㅔ'],
@@ -361,21 +361,25 @@ def make_sound(vowel, f0, duration1, sample_rate = 48000): #vowel은 char, f0은
 
     ##################  이중모음  ###################
 
-    elif vowel != 'ㅢ' and vowel != '의': #'ㅢ'를 제외한 모든 상향 이중모음 생성에 대하여...
+    elif vowel != 'ㅢ' and vowel != '의': #'ㅢ'를 제외한 모든 이중모음 생성에 대하여...
         f0 = list(f0)
         f0[0] = int(f0[0])
         f0[1] = int(f0[1])
 
-        if (duration1 >= SemivowelOverlapSec): #혹시모를 오류처리
-            ValueError(f"반모음 -> 모음 전환 시간(초)이 {SemivowelOverlapSec}이지만 전체 지속시간이 너무 짧습니다!")
+        if (duration1 <= SemivowelOverlapSec + SemivowelDurationSec): #혹시모를 오류처리
+            raise ValueError(f"반모음 시간(초)이 {SemivowelOverlapSec + SemivowelDurationSec}이지만 전체 지속시간이 너무 짧습니다!")
 
         #반모음부, 모음부 만들기
-        semi = make_sound(vowelseps[vowel][0], (f0[0]-8, f0[0]), duration1 = SemivowelDurationSec + SemivowelOverlapSec)
-        vow = make_sound(vowelseps[vowel][1], (f0[0], f0[1]), duration1 = duration1 - SemivowelDurationSec)
+        semi = make_sound(vowelseps[vowel][0], (f0[0]-8, f0[0]), duration1 = SemivowelDurationSec + SemivowelOverlapSec, sample_rate=sample_rate)
+        vow = make_sound(vowelseps[vowel][1], (f0[0], f0[1]), duration1 = duration1 - SemivowelDurationSec, sample_rate=sample_rate)
+
+        n_semi = int(sample_rate * (SemivowelDurationSec + SemivowelOverlapSec)) #얘네는 모노일때 기준 샘플수
+        n_vow = int(sample_rate * (duration1 - SemivowelDurationSec)) #얘도 모노일때 기준 샘플수
+        #fadein fadeout 만들어야해서...
 
         #반모음 사라지는 부분이랑 모음 등장하는 부분 데시벨 그래프 생성
-        fadeout = np.append(np.zeros(int(SemivowelDurationSec * sample_rate)),  np.linspace(0, -15, int(SemivowelOverlapSec * sample_rate))) - 8
-        fadein = np.append(np.linspace(-13, 0, int(SemivowelOverlapSec * sample_rate)), np.zeros(int((duration1 - SemivowelOverlapSec - SemivowelDurationSec) * sample_rate))) - 24
+        fadeout = np.append(np.zeros(int(SemivowelDurationSec * sample_rate)),  np.linspace(0, -15, n_semi - int(SemivowelDurationSec * sample_rate))) - 8
+        fadein = np.append(np.linspace(-13, 0, int(SemivowelOverlapSec * sample_rate)), np.zeros(n_vow - int(SemivowelOverlapSec * sample_rate))) - 24
 
         #데시벨 그래프 적용
         max_val = 2 ** (5 - 1)  # 16-bit 최대치 32767
@@ -393,11 +397,11 @@ def make_sound(vowel, f0, duration1, sample_rate = 48000): #vowel은 char, f0은
         output = generator.generate_sin(duration = duration1, freqL=0, freqR=0, dB=-100, sample_rate=sample_rate)
 
         #반모음부 정리
-        R = generator.generate_sin(duration = duration1 - SemivowelOverlapSec - SemivowelDurationSec, freqL=0, freqR=0, dB=-100, sample_rate=sample_rate)
+        R = np.zeros(len(output) - len(semi), dtype=output.dtype)
         output = output + np.append(semi, R)
 
         #모음부 정리
-        L = generator.generate_sin(duration = SemivowelDurationSec, freqL=0, freqR=0, dB=-100, sample_rate=sample_rate)
+        L = np.zeros(len(output) - len(vow), dtype=output.dtype)
         output = output + np.append(L, vow)
 
         return output
@@ -410,18 +414,21 @@ def make_sound(vowel, f0, duration1, sample_rate = 48000): #vowel은 char, f0은
         f0[0] = int(f0[0])
         f0[1] = int(f0[1])
 
-        if (duration1 >= loc_SemivowelOverlapSec):  # 혹시모를 오류처리
-            ValueError(f"반모음 -> 모음 전환 시간(초)이 {loc_SemivowelOverlapSec}이지만 전체 지속시간이 너무 짧습니다!")
+        if (duration1 <= loc_SemivowelOverlapSec + loc_SemivowelDurationSec):  # 혹시모를 오류처리
+            raise ValueError(f"반모음 시간(초)이 {loc_SemivowelOverlapSec + loc_SemivowelDurationSec}이지만 전체 지속시간이 너무 짧습니다!")
 
         # 반모음부, 모음부 만들기
-        semi = make_sound(vowelseps[vowel][0], (f0[0], f0[0]), duration1=loc_SemivowelDurationSec + loc_SemivowelOverlapSec)
-        vow = make_sound(vowelseps[vowel][1], (f0[0], f0[1]), duration1=duration1 - loc_SemivowelDurationSec)
+        semi = make_sound(vowelseps[vowel][0], (f0[0], f0[0]), duration1=loc_SemivowelDurationSec + loc_SemivowelOverlapSec, sample_rate=sample_rate)
+        vow = make_sound(vowelseps[vowel][1], (f0[0], f0[1]), duration1=duration1 - loc_SemivowelDurationSec, sample_rate=sample_rate)
+
+        n_semi = int(sample_rate * (loc_SemivowelDurationSec + loc_SemivowelOverlapSec))
+        n_vow = int(sample_rate * (duration1 - loc_SemivowelDurationSec))
 
         # 반모음 사라지는 부분이랑 모음 등장하는 부분 데시벨 그래프 생성
         fadeout = np.append(np.zeros(int(loc_SemivowelDurationSec * sample_rate)),
-                            np.linspace(0, -18, int(loc_SemivowelOverlapSec * sample_rate))) - 8
+                            np.linspace(0, -18, n_semi - int(loc_SemivowelDurationSec * sample_rate))) - 8
         fadein = np.append(np.linspace(-18, 0, int(loc_SemivowelOverlapSec * sample_rate)),
-                           np.zeros(int((duration1 - loc_SemivowelOverlapSec - loc_SemivowelDurationSec) * sample_rate))) - 24
+                           np.zeros(n_vow - int(loc_SemivowelOverlapSec * sample_rate))) - 24
 
         # 데시벨 그래프 적용
         max_val = 2 ** (5 - 1)  # 16-bit 최대치 32767
@@ -439,12 +446,11 @@ def make_sound(vowel, f0, duration1, sample_rate = 48000): #vowel은 char, f0은
         output = generator.generate_sin(duration=duration1, freqL=0, freqR=0, dB=-100, sample_rate=sample_rate)
 
         # 반모음부 정리
-        R = generator.generate_sin(duration=duration1 - loc_SemivowelOverlapSec - loc_SemivowelDurationSec, freqL=0, freqR=0,
-                                   dB=-100, sample_rate=sample_rate)
+        R = np.zeros(len(output) - len(semi), dtype=output.dtype)
         output = output + np.append(semi, R)
 
         # 모음부 정리
-        L = generator.generate_sin(duration=loc_SemivowelDurationSec, freqL=0, freqR=0, dB=-100, sample_rate=sample_rate)
+        L = np.zeros(len(output) - len(vow), dtype=output.dtype)
         output = output + np.append(L, vow)
 
         return output
