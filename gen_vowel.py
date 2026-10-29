@@ -47,7 +47,7 @@ vowelseps = { #하향 포함, [0]은 반모음이고 [1]은 모음이도록 딕�
     '의' : ['ㅡ', 'ㅣ']
 }
 
-def make_sound(vowel, f0, duration1, sample_rate = 48000): #vowel은 char, f0은 튜플, duration은 float
+def make_sound(vowel, f0, duration1, sample_rate = 44100): #vowel은 char, f0은 튜플, duration은 float
     if vowel == 'ㅏ' or vowel == '아':
         f0 = list(f0)
         f0[0] = int(f0[0])

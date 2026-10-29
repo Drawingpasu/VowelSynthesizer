@@ -3,7 +3,7 @@ import wave
 import os
 
 # === 파형 종류 선택 ===
-def generate_sin(sample_rate = 48000, duration = 10.0, freqL = 260, freqR = 260, bit_depth = 16, dB = np.zeros(4800)):
+def generate_sin(sample_rate = 44100, duration = 10.0, freqL = 260, freqR = 260, bit_depth = 16, dB = np.zeros(4800)):
     # "sine", "square", "triangle", "sawtooth"
     WAVE_TYPE = "sine"
 
@@ -60,7 +60,7 @@ filename = os.path.join(
 """
 
 
-def write_wav(filename, stereo_data, sample_rate = 48000, bit_depth = 16):
+def write_wav(filename, stereo_data, sample_rate = 44100, bit_depth = 16):
     with wave.open(filename + ".wav", 'w') as wf:
         wf.setnchannels(2)
         wf.setsampwidth(bit_depth // 8)
