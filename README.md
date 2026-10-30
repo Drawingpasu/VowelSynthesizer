@@ -1,3 +1,5 @@
+# VowelSynthesizer - 사인파로 단모음/이중모음 생성 및 wav저장하는 모듈
+
 ## generator.py
 
 .generate_sin(sample_rate, duration, freq, bit_depth, dB)
